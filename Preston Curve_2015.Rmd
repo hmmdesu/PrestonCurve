@@ -1,0 +1,121 @@
+---
+title: "Preston Curves"
+output:
+  html_document:
+    df_print: paged
+---
+
+"...it is plausible to say that economic globalisation can and does influence the determinants of health at a distal and population level." 
+
+An excerpt from an essay I wrote for my masters in Global Health. It simply says an increase in GDP is associated with better health outcomes. In the essay, I explain why it is not strictly true. 
+
+This is based on a concept known as a Preston Curve. This curve shows the relationship between life expectancy and real per capita income. SO to practise these R skills, I'm going to recreate this graph.
+
+Task: Create a Preston Curve using data from the World Bank 
+
+Loaded the sub-programmes I would need for this task first. Using str() to gain a brief overview of the data set.
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+WrldBnk <- read.csv('2015_GDP_LE.csv')
+head(WrldBnk)
+str(WrldBnk)
+
+colnames(WrldBnk)[1:4] = c("Country", "Code", "Life_Expectancy","GDP_PPP")
+str(WrldBnk)
+```
+
+First Attempt at data visulusation 
+```{r}
+preston <- ggplot(data = WrldBnk, aes(x = GDP_PPP,  y = Life_Expectancy)) + 
+  geom_point()
+preston
+
+```
+
+The X and Y axis are not helpful.  Clearly too early with this step. Back to the data set to round up the numbers. Realised that they are factors so any other data analysis functions may not work so converted vectors to numeric. By doing so forced the creation of incomplete rows so removed them. Finally rounded up Life Expectancy vaules to 1 decimal place and GDP_PPP to 2 decimal places. 
+
+```{r}
+WrldBnk$Life_Expectancy  <- as.numeric(as.character(WrldBnk$Life_Expectancy))
+str(WrldBnk$Life_Expectancy)
+
+WrldBnk$GDP_PPP <- as.numeric(as.character(WrldBnk$GDP_PPP))
+str(WrldBnk$GDP_PPP)
+
+WrldBnk <- remove_missing(WrldBnk, na.rm = FALSE)
+WrldBnk$Life_Expectancy <- round(WrldBnk$Life_Expectancy, 1)
+WrldBnk$GDP_PPP <- round (WrldBnk$GDP_PPP, 2)
+```
+
+Attempt 2 at scatter graph
+```{r}
+p <- ggplot(data = WrldBnk, aes(x = GDP_PPP,  y = Life_Expectancy)) + 
+  geom_point()
+p
+```
+This looks more familar. 
+The scale needs to be adjusted so not all the data points are bunched together below the 50000 mark. Though, this could suggest that most countries in the world have a GDP(PPP) less that $50,000. 
+The X and Y axis need labels as well as a Main title. 
+
+```{r}
+p + xlab("GDP_PPP in 2015 USD ($)")+ ylab("Life Expectancy in Years")+ ggtitle("Gross Domestic Prouct (GDP) Purchasing Power Parity (PPP) and Life Expectancy") + labs(caption = "taken from data provided by the World Bank")
+
+```
+
+To zoom into the section of the graph below $25,000 USD, used coord_cartesian. It makes it easier to see the trends for countries that have GDP_PPP less than 25,000USD.
+
+```{r}
+?coord_cartesian()
+
+p + coord_cartesian(xlim = c(1000, 25000))
+```
+
+Adding geom_smooth() makes it easier to see the trend.
+
+```{r}
+p + geom_smooth()
+
+```
+
+ To put all the different aspects together and create two graphs one for the all the countries and another all the countries with a GDP_PPP less than $25,000.
+
+```{r}
+
+Prstn <- p + labs(title = "Gross Domestic Prouct (GDP) Purchasing Power Parity (PPP) and Life Expectancy", caption = "Taken from data provided by the World Bank") + xlab("GDP_PPP in 2015 USD ($)") +  ylab("Life Expectancy in Years") + geom_smooth()
+Prstn
+
+```
+
+
+```{r}
+Prstn + coord_cartesian(xlim = c(1000, 25000))
+```
+ Intresting to see where countries lie where on the graph.
+```{r}
+
+Prstn + geom_text(aes(label = Country), size = 2)
+
+Prstn + coord_cartesian(xlim = c(1000, 25000))+ geom_text(aes(label = Country), size = 2)
+```
+
+This looks messy and not helpful to anyone
+```{r}
+Prstn + coord_cartesian(xlim = c(1000, 25000))+ geom_text(aes(label = Country, check_overlap = TRUE), size = 2) 
+
+```
+
+```{r}
+library(ggrepel)
+Prstn + coord_cartesian(xlim = c(1000, 25000)) + geom_label_repel(aes(label = Country), size =2)
+
+```
+That was not what I had in mind. 
+
+It maybe better to have another column that had specific country names as a separate column. Then use that column as the 'label' . Additionally, have added which region of the world these countries fall in. that would have made it easier to see which region of the world has the higer GDP and if so, do they have a larger life expectancy?
+
+The earlier graphs show what I suspected, a longer life expectancy is seen with increasing GDP. 
+
+
+
